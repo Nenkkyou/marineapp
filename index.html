@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Administração da Marina</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Manifesto PWA -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Ícone -->
+    <link rel="icon" href="icons/icon-192x192.png">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+
+    <!-- Estilos Personalizados -->
+    <style>
+        body {
+            background-color: #f0f2f5;
+        }
+        .navbar {
+            background-color: #007bff;
+        }
+        .navbar-brand {
+            color: #fff !important;
+        }
+        .card-header {
+            background-color: #007bff;
+            color: #fff;
+        }
+        .btn-primary {
+            background-color: #007bff;
+        }
+        .modal-header {
+            background-color: #007bff;
+            color: #fff;
+        }
+        .table-responsive {
+            max-height: 400px;
+        }
+        .fixed-action-btn {
+            position: fixed;
+            bottom: 45px;
+            right: 24px;
+        }
+        .highlight {
+            background-color: #ffff00;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-md navbar-dark fixed-top">
+    <a class="navbar-brand" href="#">Administração da Marina</a>
+</nav>
+
+<div class="container mt-5 pt-5">
+    <!-- Formulário -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Solicitar Serviço</h5>
+        </div>
+        <div class="card-body">
+            <form id="serviceForm">
+                <div class="form-group">
+                    <label for="boatName">Nome do Barco:</label>
+                    <input type="text" class="form-control" id="boatName" name="boatName" required>
+                </div>
+                <div class="form-group">
+                    <label for="entryDate">Data de Entrada:</label>
+                    <input type="date" class="form-control" id="entryDate" name="entryDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="serviceType">Serviço Solicitado:</label>
+                    <select class="form-control" id="serviceType" name="serviceType" required>
+                        <option value="">Selecione um serviço</option>
+                        <option value="Limpeza">Limpeza</option>
+                        <option value="Manutenção">Manutenção</option>
+                        <option value="Reparos">Reparos</option>
+                        <option value="Pintura">Pintura</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="deadline">Prazo para Conclusão:</label>
+                    <input type="date" class="form-control" id="deadline" name="deadline" required>
+                </div>
+                <div class="form-group">
+                    <label for="employeeName">Funcionário Responsável:</label>
+                    <input type="text" class="form-control" id="employeeName" name="employeeName" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Enviar Solicitação</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de Solicitações -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Lista de Solicitações de Serviço</h5>
+        </div>
+        <div class="card-body">
+            <!-- Campo de Busca -->
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" id="searchInput" placeholder="Buscar serviços...">
+                <div class="input-group-append">
+                    <button class="btn btn-secondary" id="searchButton"><i class="fas fa-search"></i> Localizar</button>
+                </div>
+            </div>
+            <!-- Tabela -->
+            <div class="table-responsive">
+                <table class="table table-striped" id="serviceTable">
+                    <thead>
+                        <tr>
+                            <th>Nome do Barco</th>
+                            <th>Data de Entrada</th>
+                            <th>Serviço Solicitado</th>
+                            <th>Prazo</th>
+                            <th>Funcionário Responsável</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- As entradas serão adicionadas aqui -->
+                    </tbody>
+                </table>
+            </div>
+            <button class="btn btn-success" onclick="exportTableToCSV('solicitacoes_servico.csv')"><i class="fas fa-file-export"></i> Exportar para Excel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Botão Flutuante para Registros Excluídos -->
+<div class="fixed-action-btn">
+    <button class="btn btn-primary btn-lg" id="viewDeleted"><i class="fas fa-eye"></i></button>
+</div>
+
+<!-- Modais -->
+<!-- Modal de Edição -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Editar Solicitação de Serviço</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Campos do Formulário de Edição -->
+                    <div class="form-group">
+                        <label for="editBoatName">Nome do Barco:</label>
+                        <input type="text" class="form-control" id="editBoatName" name="editBoatName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEntryDate">Data de Entrada:</label>
+                        <input type="date" class="form-control" id="editEntryDate" name="editEntryDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editServiceType">Serviço Solicitado:</label>
+                        <select class="form-control" id="editServiceType" name="editServiceType" required>
+                            <option value="">Selecione um serviço</option>
+                            <option value="Limpeza">Limpeza</option>
+                            <option value="Manutenção">Manutenção</option>
+                            <option value="Reparos">Reparos</option>
+                            <option value="Pintura">Pintura</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDeadline">Prazo para Conclusão:</label>
+                        <input type="date" class="form-control" id="editDeadline" name="editDeadline" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEmployeeName">Funcionário Responsável:</label>
+                        <input type="text" class="form-control" id="editEmployeeName" name="editEmployeeName" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Registros Excluídos -->
+<div class="modal fade" id="deletedModal" tabindex="-1" aria-labelledby="deletedModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registros Excluídos</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Tabela de Registros Excluídos -->
+                <div class="table-responsive">
+                    <table class="table table-striped" id="deletedTable">
+                        <thead>
+                            <tr>
+                                <th>Nome do Barco</th>
+                                <th>Data de Entrada</th>
+                                <th>Serviço Solicitado</th>
+                                <th>Prazo</th>
+                                <th>Funcionário Responsável</th>
+                                <th>Data da Exclusão</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Registros excluídos serão adicionados aqui -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Senha -->
+<div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="passwordForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Acesso Restrito</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="passwordInput">Senha:</label>
+                        <input type="password" class="form-control" id="passwordInput" required>
+                    </div>
+                    <button type="button" class="btn btn-link" id="forgotPassword">Esqueci a senha</button>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Acessar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Recuperação de Senha -->
+<div class="modal fade" id="recoverModal" tabindex="-1" aria-labelledby="recoverModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="recoverForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Recuperação de Senha</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Fechar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="emailInput">E-mail cadastrado:</label>
+                        <input type="email" class="form-control" id="emailInput" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Recuperar Senha</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts PWA -->
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+            .then(function() { console.log('Service Worker registrado com sucesso'); })
+            .catch(function() { console.log('Falha ao registrar o Service Worker'); });
+    }
+</script>
+
+<!-- JQuery e Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.bundle.min.js"></script>
+
+<!-- Script Principal -->
+<script>
+    // Arrays para armazenar as solicitações de serviço
+    let serviceRequests = [];
+    let deletedRequests = [];
+
+    // Índice do item sendo editado
+    let editIndex = null;
+
+    // Verifica se há uma senha definida
+    let passwordData = JSON.parse(localStorage.getItem('passwordData')) || null;
+
+    // Recupera dados do localStorage ao carregar a página
+    if (localStorage.getItem('serviceRequests')) {
+        serviceRequests = JSON.parse(localStorage.getItem('serviceRequests'));
+        updateServiceTable();
+    }
+
+    if (localStorage.getItem('deletedRequests')) {
+        deletedRequests = JSON.parse(localStorage.getItem('deletedRequests'));
+    }
+
+    // Função para adicionar uma nova solicitação de serviço
+    $('#serviceForm').on('submit', function(event) {
+        event.preventDefault();
+
+        // Obtém os valores do formulário
+        let boatName = $('#boatName').val();
+        let entryDate = $('#entryDate').val();
+        let serviceType = $('#serviceType').val();
+        let deadline = $('#deadline').val();
+        let employeeName = $('#employeeName').val();
+
+        // Cria um novo objeto de solicitação de serviço
+        let serviceRequest = {
+            boatName: boatName,
+            entryDate: entryDate,
+            serviceType: serviceType,
+            deadline: deadline,
+            employeeName: employeeName
+        };
+
+        // Adiciona ao array
+        serviceRequests.push(serviceRequest);
+
+        // Salva no localStorage
+        localStorage.setItem('serviceRequests', JSON.stringify(serviceRequests));
+
+        // Atualiza a tabela
+        updateServiceTable();
+
+        // Limpa o formulário
+        $('#serviceForm')[0].reset();
+    });
+
+    // Função para atualizar a tabela
+    function updateServiceTable() {
+        let tableBody = $('#serviceTable tbody');
+        tableBody.empty();
+
+        serviceRequests.forEach(function(request, index) {
+            let row = $('<tr>');
+
+            row.append($('<td>').text(request.boatName));
+            row.append($('<td>').text(formatDate(request.entryDate)));
+            row.append($('<td>').text(request.serviceType));
+            row.append($('<td>').text(formatDate(request.deadline)));
+            row.append($('<td>').text(request.employeeName));
+
+            let actionCell = $('<td>');
+            let editBtn = $('<button>').addClass('btn btn-warning btn-sm mr-2').html('<i class="fas fa-edit"></i>').click(function() {
+                openEditModal(index);
+            });
+            let deleteBtn = $('<button>').addClass('btn btn-danger btn-sm').html('<i class="fas fa-trash"></i>').click(function() {
+                deleteServiceRequest(index);
+            });
+            actionCell.append(editBtn, deleteBtn);
+            row.append(actionCell);
+
+            tableBody.append(row);
+        });
+    }
+
+    // Função para formatar datas
+    function formatDate(dateString) {
+        let date = new Date(dateString);
+        if (isNaN(date)) return '';
+        let day = String(date.getDate()).padStart(2, '0');
+        let month = String(date.getMonth() + 1).padStart(2, '0');
+        let year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+
+    // Função para excluir uma solicitação de serviço
+    function deleteServiceRequest(index) {
+        if (confirm('Tem certeza de que deseja excluir esta solicitação?')) {
+            let deletedRequest = serviceRequests.splice(index, 1)[0];
+            deletedRequest.deletionDate = new Date().toISOString();
+            deletedRequests.push(deletedRequest);
+
+            localStorage.setItem('serviceRequests', JSON.stringify(serviceRequests));
+            localStorage.setItem('deletedRequests', JSON.stringify(deletedRequests));
+
+            updateServiceTable();
+        }
+    }
+
+    // Função para abrir o modal de edição
+    function openEditModal(index) {
+        editIndex = index;
+        let request = serviceRequests[index];
+
+        $('#editBoatName').val(request.boatName);
+        $('#editEntryDate').val(request.entryDate);
+        $('#editServiceType').val(request.serviceType);
+        $('#editDeadline').val(request.deadline);
+        $('#editEmployeeName').val(request.employeeName);
+
+        $('#editModal').modal('show');
+    }
+
+    // Função para salvar as alterações da edição
+    $('#editForm').on('submit', function(event) {
+        event.preventDefault();
+
+        let boatName = $('#editBoatName').val();
+        let entryDate = $('#editEntryDate').val();
+        let serviceType = $('#editServiceType').val();
+        let deadline = $('#editDeadline').val();
+        let employeeName = $('#editEmployeeName').val();
+
+        let updatedRequest = {
+            boatName: boatName,
+            entryDate: entryDate,
+            serviceType: serviceType,
+            deadline: deadline,
+            employeeName: employeeName
+        };
+
+        serviceRequests[editIndex] = updatedRequest;
+        localStorage.setItem('serviceRequests', JSON.stringify(serviceRequests));
+        updateServiceTable();
+
+        $('#editModal').modal('hide');
+    });
+
+    // Função para exportar dados para CSV
+    function exportTableToCSV(filename) {
+        let csv = [];
+        let rows = document.querySelectorAll('#serviceTable tr');
+
+        for (let i = 0; i < rows.length; i++) {
+            let row = [], cols = rows[i].querySelectorAll('td, th');
+
+            for (let j = 0; j < cols.length - 1; j++) // Exclui a última coluna (Ações)
+                row.push('"' + cols[j].innerText + '"');
+
+            csv.push(row.join(','));
+        }
+
+        // Baixa o arquivo CSV
+        downloadCSV(csv.join('\n'), filename);
+    }
+
+    function downloadCSV(csv, filename) {
+        let csvFile;
+        let downloadLink;
+
+        // Arquivo CSV
+        csvFile = new Blob([csv], {type: 'text/csv'});
+
+        // Link para download
+        downloadLink = document.createElement('a');
+
+        // Nome do arquivo
+        downloadLink.download = filename;
+
+        // Cria um link para o arquivo
+        downloadLink.href = window.URL.createObjectURL(csvFile);
+
+        // Oculta o link
+        downloadLink.style.display = 'none';
+
+        // Adiciona o link ao DOM
+        document.body.appendChild(downloadLink);
+
+        // Clica no link para baixar
+        downloadLink.click();
+
+        // Remove o link do DOM
+        document.body.removeChild(downloadLink);
+    }
+
+    // Função para destacar o texto pesquisado
+    function highlightSearch(term) {
+        let table = document.getElementById('serviceTable');
+        let trs = table.getElementsByTagName('tr');
+
+        // Loop nas linhas, exceto a primeira (cabeçalho)
+        for (let i = 1; i < trs.length; i++) {
+            let tds = trs[i].getElementsByTagName('td');
+            let found = false;
+
+            // Remover destaque anterior
+            for (let j = 0; j < tds.length - 1; j++) {
+                tds[j].innerHTML = tds[j].innerHTML.replace(/<span class="highlight">(.*?)<\/span>/g, '$1');
+            }
+
+            // Loop nas células da linha
+            for (let j = 0; j < tds.length - 1; j++) { // Exclui a última célula (ações)
+                let cellText = tds[j].innerText;
+                let regex = new RegExp('(' + term + ')', 'gi');
+                if (regex.test(cellText)) {
+                    found = true;
+                    tds[j].innerHTML = cellText.replace(regex, '<span class="highlight">$1</span>');
+                }
+            }
+
+            trs[i].style.display = found ? '' : 'none';
+        }
+    }
+
+    // Evento do botão "Localizar"
+    $('#searchButton').on('click', function() {
+        let searchTerm = $('#searchInput').val().trim();
+        if (searchTerm === '') {
+            // Se o campo de busca estiver vazio, mostrar todas as linhas e remover destaques
+            $('#serviceTable tbody tr').show().find('td').each(function() {
+                $(this).html($(this).text());
+            });
+        } else {
+            highlightSearch(searchTerm);
+        }
+    });
+
+    // Evento do botão flutuante "Olho"
+    $('#viewDeleted').on('click', function() {
+        if (!passwordData) {
+            let newPassword = prompt('Crie uma senha de acesso aos registros excluídos:');
+            let email = prompt('Informe um e-mail para recuperação de senha:');
+            if (newPassword && email) {
+                passwordData = {
+                    password: newPassword,
+                    email: email
+                };
+                localStorage.setItem('passwordData', JSON.stringify(passwordData));
+                alert('Senha e e-mail cadastrados com sucesso! Utilize a senha para acessar os registros excluídos.');
+            } else {
+                alert('Senha ou e-mail não definidos. Não é possível acessar os registros excluídos.');
+                return;
+            }
+        }
+
+        // Abre o modal de senha
+        $('#passwordModal').modal('show');
+    });
+
+    // Evento de submissão da senha
+    $('#passwordForm').on('submit', function(event) {
+        event.preventDefault();
+        let inputPassword = $('#passwordInput').val();
+        if (inputPassword === passwordData.password) {
+            $('#passwordModal').modal('hide');
+            $('#passwordInput').val('');
+            openDeletedModal();
+        } else {
+            alert('Senha incorreta!');
+        }
+    });
+
+    // Evento do botão "Esqueci a senha"
+    $('#forgotPassword').on('click', function() {
+        $('#passwordModal').modal('hide');
+        $('#recoverModal').modal('show');
+    });
+
+    // Evento de submissão de recuperação de senha
+    $('#recoverForm').on('submit', function(event) {
+        event.preventDefault();
+        let inputEmail = $('#emailInput').val();
+        if (inputEmail === passwordData.email) {
+            generatePasswordFile(passwordData.password);
+            $('#recoverModal').modal('hide');
+            $('#emailInput').val('');
+        } else {
+            alert('E-mail não corresponde ao cadastrado!');
+        }
+    });
+
+    // Função para gerar arquivo com a senha
+    function generatePasswordFile(password) {
+        let text = 'Sua senha de acesso aos registros excluídos é: ' + password;
+        let textFile = new Blob([text], {type: 'text/plain'});
+        let downloadLink = document.createElement('a');
+        downloadLink.download = 'senha_acesso.txt';
+        downloadLink.href = window.URL.createObjectURL(textFile);
+        downloadLink.style.display = 'none';
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+    }
+
+    // Função para abrir o modal de registros excluídos
+    function openDeletedModal() {
+        updateDeletedTable();
+        $('#deletedModal').modal('show');
+    }
+
+    // Função para atualizar a tabela de registros excluídos
+    function updateDeletedTable() {
+        let tableBody = $('#deletedTable tbody');
+        tableBody.empty();
+
+        deletedRequests.forEach(function(request) {
+            let row = $('<tr>');
+
+            row.append($('<td>').text(request.boatName));
+            row.append($('<td>').text(formatDate(request.entryDate)));
+            row.append($('<td>').text(request.serviceType));
+            row.append($('<td>').text(formatDate(request.deadline)));
+            row.append($('<td>').text(request.employeeName));
+            row.append($('<td>').text(formatDate(request.deletionDate)));
+
+            tableBody.append(row);
+        });
+    }
+</script>
+
+</body>
+</html>
